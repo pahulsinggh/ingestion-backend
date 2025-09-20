@@ -2,7 +2,7 @@
 # S3 bucket (incoming) #
 ########################
 resource "aws_s3_bucket" "incoming" {
-  bucket = "${var.proj}-partner-incoming"  # must be globally unique
+  bucket = "${var.proj}-partner-incoming" # must be globally unique
 }
 
 resource "aws_s3_bucket_versioning" "incoming" {
@@ -23,14 +23,14 @@ resource "aws_s3_bucket_public_access_block" "incoming" {
 ########################
 resource "aws_sqs_queue" "dlq" {
   name                      = "${var.proj}-ingest-dlq"
-  message_retention_seconds = 1209600  # 14 days
+  message_retention_seconds = 1209600 # 14 days
 }
 
 resource "aws_sqs_queue" "main" {
-  name                             = "${var.proj}-ingest"
-  visibility_timeout_seconds       = 180
-  message_retention_seconds        = 345600
-  receive_wait_time_seconds        = 10
+  name                       = "${var.proj}-ingest"
+  visibility_timeout_seconds = 180
+  message_retention_seconds  = 345600
+  receive_wait_time_seconds  = 10
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.dlq.arn,
     maxReceiveCount     = 5
@@ -43,11 +43,11 @@ resource "aws_sqs_queue_policy" "s3_to_sqs" {
   policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
-      Sid      = "AllowS3Send",
-      Effect   = "Allow",
+      Sid       = "AllowS3Send",
+      Effect    = "Allow",
       Principal = { Service = "s3.amazonaws.com" },
-      Action   = "sqs:SendMessage",
-      Resource = aws_sqs_queue.main.arn,
+      Action    = "sqs:SendMessage",
+      Resource  = aws_sqs_queue.main.arn,
       Condition = { ArnEquals = { "aws:SourceArn" = aws_s3_bucket.incoming.arn } }
     }]
   })
@@ -69,8 +69,8 @@ resource "aws_s3_bucket_notification" "incoming_notify" {
 resource "aws_iam_role" "lambda_role" {
   name = "${var.proj}-ingest-worker-role"
   assume_role_policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [{ Effect="Allow", Principal={ Service="lambda.amazonaws.com" }, Action="sts:AssumeRole" }]
+    Version   = "2012-10-17",
+    Statement = [{ Effect = "Allow", Principal = { Service = "lambda.amazonaws.com" }, Action = "sts:AssumeRole" }]
   })
 }
 
@@ -83,11 +83,11 @@ resource "aws_iam_role_policy" "sqs_access" {
   name = "${var.proj}-lambda-sqs"
   role = aws_iam_role.lambda_role.id
   policy = jsonencode({
-    Version="2012-10-17",
-    Statement=[{
-      Effect  = "Allow",
-      Action  = ["sqs:ReceiveMessage","sqs:DeleteMessage","sqs:GetQueueAttributes","sqs:ChangeMessageVisibility"],
-      Resource= [aws_sqs_queue.main.arn]
+    Version = "2012-10-17",
+    Statement = [{
+      Effect   = "Allow",
+      Action   = ["sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:GetQueueAttributes", "sqs:ChangeMessageVisibility"],
+      Resource = [aws_sqs_queue.main.arn]
     }]
   })
 }
@@ -121,5 +121,5 @@ resource "aws_lambda_event_source_mapping" "sqs_trigger" {
 # Outputs              #
 ########################
 output "bucket_name" { value = aws_s3_bucket.incoming.bucket }
-output "queue_url"   { value = aws_sqs_queue.main.id }
+output "queue_url" { value = aws_sqs_queue.main.id }
 output "lambda_name" { value = aws_lambda_function.worker.function_name }
