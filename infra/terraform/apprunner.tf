@@ -54,3 +54,4 @@ output "apprunner_url" {
   value       = length(aws_apprunner_service.backend) > 0 ? aws_apprunner_service.backend[0].service_url : null
   description = "App Runner URL for the source-build path (only when gh_conn_arn is set)"
 }
+
